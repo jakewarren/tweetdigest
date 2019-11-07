@@ -1,0 +1,10 @@
+email_from:
+  address: addy1@email.com
+  name: Tweet Digest - automated message
+email_to:
+  - addy1@email.com
+  - addy2@email.com
+consumer_key: "abc123"
+consumer_secret: "abc123"
+access_token: "abc123"
+access_token_secret: "abc123"
