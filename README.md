@@ -28,6 +28,12 @@ go get github.com/jakewarren/tweetdigest
 tweetdigest --duration "-24h" -c ~/.tweetdigest.yml SwiftOnSecurity
 ```
 
+## Demo
+
+Screenshot of the sample digest:
+
+![](screenshot.png)
+
 ## Changes
 
 All notable changes to this project will be documented in the [changelog].
