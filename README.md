@@ -23,6 +23,15 @@ go get github.com/jakewarren/tweetdigest
 ```
 
 ## Usage
+```
+❯ tweetdigest -h
+Usage of tweetdigest:
+  -c, --config string       filepath to the config file
+  -d, --duration duration   how far back to include tweets in the digest (example: "-24h")
+  -V, --version             show version information
+```
+
+Example:
 
 ```
 tweetdigest --duration "-24h" -c ~/.tweetdigest.yml SwiftOnSecurity
