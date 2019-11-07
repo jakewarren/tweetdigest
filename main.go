@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/url"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/ChimeraCoder/anaconda"
@@ -41,15 +42,36 @@ func (h SeverityHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
 	}
 }
 
+var (
+	// build information set by ldflags
+	appName   = "tweetdigest"
+	version   = "(ﾉ☉ヮ⚆)ﾉ ⌒*:･ﾟ✧"
+	commit    = "(ﾉ☉ヮ⚆)ﾉ ⌒*:･ﾟ✧"
+	buildDate = "(ﾉ☉ヮ⚆)ﾉ ⌒*:･ﾟ✧"
+)
+
 func main() {
 	a := app{}
 
 	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).Hook(SeverityHook{}).With().Caller().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
+	showVersion := pflag.BoolP("version", "V", false, "show version information")
 	pflag.StringVarP(&a.Config.ConfigFile, "config", "c", "", "filepath to the config file")
 	pflag.DurationVarP(&a.Config.Threshold, "duration", "d", 0, "how far back to include tweets in the digest (example: \"-24h\")")
 	pflag.Parse()
+
+	if *showVersion {
+		fmt.Printf(`%s:
+    version     : %s
+    git hash    : %s
+    build date  : %s
+    go version  : %s
+    go compiler : %s
+    platform    : %s/%s
+`, appName, version, commit, buildDate, runtime.Version(), runtime.Compiler, runtime.GOOS, runtime.GOARCH)
+		os.Exit(0)
+	}
 
 	// check for required args
 	if pflag.NArg() < 1 {
