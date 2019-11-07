@@ -27,10 +27,24 @@ type app struct {
 	}
 }
 
+type SeverityHook struct{}
+
+// hasErrorOccurred will be set to 1 if an error has occured throughout the execution
+// this error is then reported via the exit code so that cronic will fire an email.
+var hasErrorOccured int
+
+// Run hooks into error events to record that an error has occured
+func (h SeverityHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+	if level >= zerolog.ErrorLevel {
+		hasErrorOccured = 1
+		e.Caller()
+	}
+}
+
 func main() {
 	a := app{}
 
-	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).With().Caller().Timestamp().Logger()
+	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).Hook(SeverityHook{}).With().Caller().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	pflag.StringVarP(&a.Config.ConfigFile, "config", "c", "", "filepath to the config file")
@@ -84,9 +98,11 @@ func main() {
 	m.SetBody("text/html", a.generateHTML(tweets))
 	d := gomail.Dialer{Host: "localhost", Port: 25}
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
-	if err := d.DialAndSend(m); err != nil {
-		panic(err)
+	if mailErr := d.DialAndSend(m); mailErr != nil {
+		panic(mailErr)
 	}
+
+	os.Exit(hasErrorOccured)
 }
 
 func (a app) getTweetsForUser(s string) []anaconda.Tweet {
@@ -97,7 +113,7 @@ func (a app) getTweetsForUser(s string) []anaconda.Tweet {
 	var timeline []anaconda.Tweet
 
 	// for some reason Twitter will occasionally only return one tweet, so use this hacky retry method
-	for i := 1; i <= 3; i++ {
+	for i := 1; i <= 5; i++ {
 		var err error
 		timeline, err = a.Client.GetUserTimeline(v)
 		if err != nil {
@@ -105,12 +121,14 @@ func (a app) getTweetsForUser(s string) []anaconda.Tweet {
 		}
 
 		tweetCount := len(timeline)
-		log.Debug().Int("tweet count", tweetCount).Int("attempt", i).Msg("pulled down tweets")
+		log.Debug().Int("tweet-count", tweetCount).Int("attempt", i).Msg("pulled down tweets")
 		if tweetCount > 1 {
 			break
 		}
-		log.Debug().Msgf("retrying. sleeping for %d seconds...", i*30)
-		time.Sleep(time.Duration(i*30) * time.Second)
+
+		backoffInterval := 5
+		log.Debug().Msgf("retrying after %d seconds...", i*backoffInterval)
+		time.Sleep(time.Duration(i*backoffInterval) * time.Second)
 	}
 
 	dateThreshold := time.Now().Local().Add(a.Config.Threshold)
@@ -152,7 +170,7 @@ func (a app) generateHTML(tweets []anaconda.Tweet) string {
 		"getTwitterImage": func(url string) template.HTML {
 			p, metaErr := metascraper.Scrape(url)
 			if metaErr != nil {
-				// log.Error().Str("url", url).Err(metaErr).Msg("error getting metadata for an url")
+				log.Error().Str("url", url).Err(metaErr).Msg("error getting metadata for an url")
 				return ""
 			}
 
@@ -241,7 +259,121 @@ const emailTemplate = `
         width="100%">
 
 		{{range .Tweets}}
-        <tr>
+        
+
+{{ if .RetweetedStatus }}
+
+<tr>
+            <td style="vertical-align:top; border:1px solid #E2E6E6; padding:5px; border-bottom:none" valign="top">
+<img style="max-width:100%; display:inline; height:10px; padding-top:1px; vertical-align:baseline; width:auto" src="https://upload.wikimedia.org/wikipedia/commons/7/70/Retweet.png" height="10" valign="baseline" width="auto"> {{.User.ScreenName}} Retweeted <br>
+                <table style="table-layout:fixed; width:100%" width="100%">
+                    <tr>
+						
+                        <td style="vertical-align:top; text-align:center; width:60px" valign="top" align="center"
+                            width="60">
+
+
+                            <img style="max-width:100%; border-radius:50%; height:48px; min-width:48px; width:48px"
+                                src="{{.RetweetedStatus.User.ProfileImageUrlHttps}}"
+                                height="48" width="48">
+                        </td>
+                        <td style="vertical-align:top" valign="top">
+                            <table cellpadding="0" cellspacing="0" border="0"
+                                style="table-layout:fixed; width:100%; padding-left:5px" width="100%">
+                                <tr>
+                                    <td style="vertical-align:top" valign="top">
+
+                                        <a href="https://twitter.com/{{.RetweetedStatus.User.ScreenName}}/status/{{.RetweetedStatus.Id}}"
+                                            style="color:black; text-decoration:None">
+                                            <strong>{{ .RetweetedStatus.User.Name }}</strong>
+                                            <span>@{{.RetweetedStatus.User.ScreenName}}</span>
+                                            <span style="float:right;">{{.RetweetedStatus | formatTime }}</span>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="vertical-align:top" valign="top">
+
+                                        <p style="margin-bottom:10px; margin:0; padding-bottom:5px; white-space:pre-wrap">
+{{ .RetweetedStatus.FullText }}    
+										</p>
+
+{{range .RetweetedStatus.ExtendedEntities.Media}}
+<img src="{{.Media_url_https}}"  style="max-width:100%; padding-bottom:5px">
+{{end}}
+
+{{range .RetweetedStatus.Entities.Urls}}
+
+<table style="table-layout:fixed; width:100%; border-radius:12px; border:1px solid #E2E6E6; padding:5px; margin:5px 0"   width="100%">
+    <tr>
+
+        <td style="vertical-align:top" valign="top">
+            <table cellpadding="0" cellspacing="0" border="0"
+                style="table-layout:fixed; width:100%; padding-left:5px"
+                width="100%">
+                <tr>
+                    <td style="vertical-align:top" valign="top">
+                        <p
+                            style="margin-bottom:10px; margin:0; overflow:hidden; text-overflow:inherit; white-space:normal">
+                            <a href="{{.Expanded_url}}"
+                                target="_blank"
+                                style="color:#000; text-decoration:None">
+                                {{.Expanded_url | getTwitterImage}}
+
+                                <strong>{{.Expanded_url}}</strong>
+                            </a>
+                        </p>
+                    </td>
+                </tr>
+
+                
+
+            </table>
+
+        </td>
+    </tr>
+</table>
+
+{{end}}
+
+                                    </td>
+                                </tr>
+
+
+                                <td style="vertical-align:top" valign="top">
+                                    <table style="table-layout:fixed; width:100%" width="100%">
+                                        <tr>
+                                            <a href="https://twitter.com/{{.User.ScreenName}}/status/{{.Id}}"
+                                                target="_blank" style="color:#348eda; text-decoration:None">
+                                                <p style="margin-bottom:10px; margin:0">
+
+                                                    <span style="color:#4e555b; margin-right:28px">
+                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/70/Retweet.png"
+                                                            style="max-width:100%; display:inline; height:16px; padding-top:1px; vertical-align:text-top; width:auto"
+                                                            height="16" valign="text-top" width="auto">
+                                                        <span>{{.RetweetedStatus.RetweetCount}}</span>
+                                                    </span>
+                                                    <span style="color:#4e555b; margin-right:28px">
+                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Twitter_favorite.png"
+                                                            style="max-width:100%; display:inline; height:16px; padding-top:1px; vertical-align:text-top; width:auto"
+                                                            height="16" valign="text-top" width="auto">
+                                                        <span>{{.RetweetedStatus.FavoriteCount}}</span>
+                                                    </span>
+                                                </p>
+                                            </a>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </table>
+                            <a href="https://twitter.com/{{.RetweetedStatus.User.ScreenName}}/"
+                                target="_blank" style="color:#348eda; text-decoration:None"></a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+{{ else }}
+<tr>
             <td style="vertical-align:top; border:1px solid #E2E6E6; padding:5px; border-bottom:none" valign="top">
 
                 <table style="table-layout:fixed; width:100%" width="100%">
@@ -346,6 +478,8 @@ const emailTemplate = `
                 </table>
             </td>
         </tr>
+
+{{ end }}
 		{{end}}
 
         
