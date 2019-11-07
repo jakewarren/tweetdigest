@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/ChimeraCoder/anaconda"
@@ -25,6 +26,7 @@ type app struct {
 	Config struct {
 		Threshold  time.Duration
 		ConfigFile string
+		TweetCount int
 	}
 }
 
@@ -50,7 +52,6 @@ var (
 	buildDate = "(ﾉ☉ヮ⚆)ﾉ ⌒*:･ﾟ✧"
 )
 
-// TODO: make tweet count adjustable
 // TODO: make to addresses configurable via params
 // TODO: make mail server configurable
 func main() {
@@ -68,6 +69,7 @@ func main() {
 	}
 
 	showVersion := pflag.BoolP("version", "V", false, "show version information")
+	pflag.IntVar(&a.Config.TweetCount, "tweet-count", 50, "number of tweets to analyze (max 200)")
 	pflag.StringVarP(&a.Config.ConfigFile, "config", "c", "", "filepath to the config file")
 	pflag.DurationVarP(&a.Config.Threshold, "duration", "d", 0, "how far back to include tweets in the digest (example: \"-24h\")")
 	pflag.Parse()
@@ -141,7 +143,7 @@ func main() {
 func (a app) getTweetsForUser(s string) []anaconda.Tweet {
 	v := url.Values{}
 	v.Set("screen_name", s)
-	v.Set("count", "50")
+	v.Set("count", strconv.Itoa(a.Config.TweetCount))
 
 	var timeline []anaconda.Tweet
 
@@ -155,7 +157,7 @@ func (a app) getTweetsForUser(s string) []anaconda.Tweet {
 
 		tweetCount := len(timeline)
 		log.Debug().Int("tweet-count", tweetCount).Int("attempt", i).Msg("pulled down tweets")
-		if tweetCount > 1 {
+		if tweetCount > 1 || a.Config.TweetCount == 1 {
 			break
 		}
 
