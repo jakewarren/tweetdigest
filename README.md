@@ -25,7 +25,11 @@ go get github.com/jakewarren/tweetdigest
 ## Usage
 ```
 ❯ tweetdigest -h
-Usage of tweetdigest:
+Description: compiles tweets into an email digest
+
+Usage: tweetdigest [twitter username]
+
+Options:
   -c, --config string       filepath to the config file
   -d, --duration duration   how far back to include tweets in the digest (example: "-24h")
   -V, --version             show version information

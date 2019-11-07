@@ -50,11 +50,22 @@ var (
 	buildDate = "(ﾉ☉ヮ⚆)ﾉ ⌒*:･ﾟ✧"
 )
 
+// TODO: make tweet count adjustable
+// TODO: make to addresses configurable via params
+// TODO: make mail server configurable
 func main() {
 	a := app{}
 
 	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).Hook(SeverityHook{}).With().Caller().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+
+	pflag.Usage = func() {
+		fmt.Printf("Description: %s\n\n", "compiles tweets into an email digest")
+		fmt.Printf("Usage: %s -d [duration] [twitter username]\n\n", os.Args[0])
+		fmt.Printf("Options:\n")
+		pflag.PrintDefaults()
+		os.Exit(0)
+	}
 
 	showVersion := pflag.BoolP("version", "V", false, "show version information")
 	pflag.StringVarP(&a.Config.ConfigFile, "config", "c", "", "filepath to the config file")
