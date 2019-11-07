@@ -4,6 +4,11 @@ email_from:
 email-to:
   - addy1@email.com
   - addy2@email.com
+email_server:
+  server: localhost
+  port: 25
+  username:
+  password:
 consumer_key: "abc123"
 consumer_secret: "abc123"
 access_token: "abc123"

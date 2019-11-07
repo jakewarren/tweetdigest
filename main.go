@@ -52,11 +52,10 @@ var (
 	buildDate = "(ﾉ☉ヮ⚆)ﾉ ⌒*:･ﾟ✧"
 )
 
-// TODO: make mail server configurable
 func main() {
 	a := app{}
 
-	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr}).Hook(SeverityHook{}).With().Caller().Timestamp().Logger()
+	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Hook(SeverityHook{}).With().Caller().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	pflag.Usage = func() {
@@ -132,7 +131,12 @@ func main() {
 	m.SetHeader("To", viper.GetStringSlice("email-to")...)
 	m.SetHeader("Subject", fmt.Sprintf("@%s Tweet Digest for %s", username, time.Now().Format("1/2/06")))
 	m.SetBody("text/html", a.generateHTML(tweets))
-	d := gomail.Dialer{Host: "localhost", Port: 25}
+	d := gomail.Dialer{
+		Host:     viper.GetString("email_server.server"),
+		Port:     viper.GetInt("email_server.port"),
+		Username: viper.GetString("email_server.username"),
+		Password: viper.GetString("email_server.password"),
+	}
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	if mailErr := d.DialAndSend(m); mailErr != nil {
 		panic(mailErr)
