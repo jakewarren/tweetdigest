@@ -52,7 +52,6 @@ var (
 	buildDate = "(ﾉ☉ヮ⚆)ﾉ ⌒*:･ﾟ✧"
 )
 
-// TODO: make to addresses configurable via params
 // TODO: make mail server configurable
 func main() {
 	a := app{}
@@ -72,7 +71,9 @@ func main() {
 	pflag.IntVar(&a.Config.TweetCount, "tweet-count", 50, "number of tweets to analyze (max 200)")
 	pflag.StringVarP(&a.Config.ConfigFile, "config", "c", "", "filepath to the config file")
 	pflag.DurationVarP(&a.Config.Threshold, "duration", "d", 0, "how far back to include tweets in the digest (example: \"-24h\")")
+	pflag.StringSliceP("email-to", "t", nil, "email address(es) to send the report to")
 	pflag.Parse()
+	viper.BindPFlags(pflag.CommandLine)
 
 	if *showVersion {
 		fmt.Printf(`%s:
@@ -128,7 +129,7 @@ func main() {
 
 	m := gomail.NewMessage()
 	m.SetAddressHeader("From", viper.GetString("email_from.address"), viper.GetString("email_from.name"))
-	m.SetHeader("To", viper.GetStringSlice("email_to")...)
+	m.SetHeader("To", viper.GetStringSlice("email-to")...)
 	m.SetHeader("Subject", fmt.Sprintf("@%s Tweet Digest for %s", username, time.Now().Format("1/2/06")))
 	m.SetBody("text/html", a.generateHTML(tweets))
 	d := gomail.Dialer{Host: "localhost", Port: 25}

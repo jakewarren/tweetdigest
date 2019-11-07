@@ -32,6 +32,7 @@ Usage: tweetdigest -d [duration] [twitter username]
 Options:
   -c, --config string       filepath to the config file
   -d, --duration duration   how far back to include tweets in the digest (example: "-24h")
+  -t, --email-to strings    email address(es) to send the report to
       --tweet-count int     number of tweets to analyze (max 200) (default 50)
   -V, --version             show version information
 ```
