@@ -181,7 +181,7 @@ func (a app) getTweetsForUser(s string) []anaconda.Tweet {
 		cTime = cTime.Local() // convert to local timezone
 
 		if cTime.After(dateThreshold) {
-			tweets = append(tweets, tweet)
+			tweets = append([]anaconda.Tweet{tweet}, tweets...)
 		}
 
 	}
