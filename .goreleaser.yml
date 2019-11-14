@@ -27,3 +27,5 @@ changelog:
     - '^test:'
     - Merge pull request
     - Merge branch
+    - '^release'
+    - (?i)update (README|goreleaser)
