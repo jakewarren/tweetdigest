@@ -1,3 +1,4 @@
+//nolint:funlen,gosec
 package main
 
 import (
@@ -32,11 +33,11 @@ type app struct {
 
 type SeverityHook struct{}
 
-// hasErrorOccurred will be set to 1 if an error has occured throughout the execution
+// hasErrorOccurred will be set to 1 if an error has occurred throughout the execution
 // this error is then reported via the exit code so that cronic will fire an email.
 var hasErrorOccured int
 
-// Run hooks into error events to record that an error has occured
+// Run hooks into error events to record that an error has occurred
 func (h SeverityHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
 	if level >= zerolog.ErrorLevel {
 		hasErrorOccured = 1
@@ -72,7 +73,7 @@ func main() {
 	pflag.DurationVarP(&a.Config.Threshold, "duration", "d", 0, "how far back to include tweets in the digest (example: \"-24h\")")
 	pflag.StringSliceP("email-to", "t", nil, "email address(es) to send the report to")
 	pflag.Parse()
-	viper.BindPFlags(pflag.CommandLine)
+	_ = viper.BindPFlags(pflag.CommandLine)
 
 	if *showVersion {
 		fmt.Printf(`%s:
@@ -176,14 +177,12 @@ func (a app) getTweetsForUser(s string) []anaconda.Tweet {
 	tweets := make([]anaconda.Tweet, 0)
 
 	for _, tweet := range timeline {
-
 		cTime, _ := tweet.CreatedAtTime()
 		cTime = cTime.Local() // convert to local timezone
 
 		if cTime.After(dateThreshold) {
 			tweets = append([]anaconda.Tweet{tweet}, tweets...)
 		}
-
 	}
 
 	return tweets
