@@ -31,6 +31,7 @@ type app struct {
 		Threshold  time.Duration
 		ConfigFile string
 		TweetCount int
+		Verbose    bool
 	}
 }
 
@@ -62,9 +63,6 @@ var (
 func main() {
 	a := app{}
 
-	log.Logger = zerolog.New(os.Stdout).Hook(SeverityHook{}).With().Caller().Timestamp().Logger()
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
-
 	pflag.Usage = func() {
 		fmt.Printf("Description: %s\n\n", "compiles tweets into an email digest")
 		fmt.Printf("Usage: %s -d [duration] [twitter username]\n\n", os.Args[0])
@@ -78,8 +76,16 @@ func main() {
 	pflag.StringVarP(&a.Config.ConfigFile, "config", "c", "", "filepath to the config file")
 	pflag.DurationVarP(&a.Config.Threshold, "duration", "d", 0, "how far back to include tweets in the digest (example: \"-24h\")")
 	pflag.StringSliceP("email-to", "t", nil, "email address(es) to send the report to")
+	pflag.BoolVarP(&a.Config.Verbose, "verbose", "v", false, "enable verbose output")
 	pflag.Parse()
 	_ = viper.BindPFlags(pflag.CommandLine)
+
+	log.Logger = zerolog.New(os.Stdout).Hook(SeverityHook{}).With().Caller().Timestamp().Logger()
+	if a.Config.Verbose {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	} else {
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	}
 
 	if *showVersion {
 		fmt.Printf(`%s:
