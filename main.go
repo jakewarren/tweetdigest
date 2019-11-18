@@ -6,10 +6,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"html/template"
+	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ChimeraCoder/anaconda"
@@ -51,12 +54,15 @@ var (
 	version   = "(ﾉ☉ヮ⚆)ﾉ ⌒*:･ﾟ✧"
 	commit    = "(ﾉ☉ヮ⚆)ﾉ ⌒*:･ﾟ✧"
 	buildDate = "(ﾉ☉ヮ⚆)ﾉ ⌒*:･ﾟ✧"
+
+	// simple regex to match on URLs
+	urlRE = regexp.MustCompile(`(?m)https?:\/\/[^\s]+`)
 )
 
 func main() {
 	a := app{}
 
-	log.Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout}).Hook(SeverityHook{}).With().Caller().Timestamp().Logger()
+	log.Logger = zerolog.New(os.Stdout).Hook(SeverityHook{}).With().Caller().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	pflag.Usage = func() {
@@ -206,6 +212,7 @@ func (a app) generateHTML(tweets []anaconda.Tweet) string {
 			cTime = cTime.Local()
 			return template.HTML(cTime.Format("Jan 2"))
 		},
+		// enrich URLs by using the twitter images from URLs if they provide the supported metadata
 		"getTwitterImage": func(url string) template.HTML {
 			p, metaErr := metascraper.Scrape(url)
 			if metaErr != nil {
@@ -221,6 +228,24 @@ func (a app) generateHTML(tweets []anaconda.Tweet) string {
 
 			return ""
 		},
+		// unshorten a single URL
+		"unshortenURL": func(url string) template.HTML {
+			finalURL, _ := unshortenURL(url)
+			return template.HTML(finalURL)
+		},
+		// use regex to attempt to unshorten all URLs in a block of text
+		"unshortenURLsinText": func(text string) template.HTML {
+			output := text
+
+			for _, match := range urlRE.FindAllString(text, -1) {
+				finalURL, unshortenErr := unshortenURL(match)
+				if unshortenErr == nil {
+					output = strings.ReplaceAll(output, match, finalURL)
+				}
+			}
+
+			return template.HTML(output)
+		},
 	}
 
 	t := template.New("emailTmpl").Funcs(funcMap)
@@ -233,6 +258,27 @@ func (a app) generateHTML(tweets []anaconda.Tweet) string {
 	}
 
 	return buf.String()
+}
+
+func unshortenURL(url string) (string, error) {
+	var output string
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: false},
+	}
+	client := http.Client{
+		Transport: tr,
+		Timeout:   30 * time.Second,
+	}
+
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible;)")
+
+	resp, unshortenErr := client.Do(req)
+	if unshortenErr == nil {
+		output = resp.Request.URL.String()
+	}
+	return output, unshortenErr
 }
 
 const emailTemplate = `
@@ -334,7 +380,7 @@ const emailTemplate = `
                                     <td style="vertical-align:top" valign="top">
 
                                         <p style="margin-bottom:10px; margin:0; padding-bottom:5px; white-space:pre-wrap">
-{{ .RetweetedStatus.FullText }}    
+{{ .RetweetedStatus.FullText | unshortenURLsinText}}    
 										</p>
 
 {{range .RetweetedStatus.ExtendedEntities.Media}}
@@ -354,12 +400,12 @@ const emailTemplate = `
                     <td style="vertical-align:top" valign="top">
                         <p
                             style="margin-bottom:10px; margin:0; overflow:hidden; text-overflow:inherit; white-space:normal">
-                            <a href="{{.Expanded_url}}"
+                            <a href="{{.Expanded_url | unshortenURL}}"
                                 target="_blank"
                                 style="color:#000; text-decoration:None">
                                 {{.Expanded_url | getTwitterImage}}
 
-                                <strong>{{.Expanded_url}}</strong>
+                                <strong>{{.Expanded_url | unshortenURL}}</strong>
                             </a>
                         </p>
                     </td>
@@ -442,7 +488,7 @@ const emailTemplate = `
                                     <td style="vertical-align:top" valign="top">
 
                                         <p style="margin-bottom:10px; margin:0; padding-bottom:5px; white-space:pre-wrap">
-{{ .FullText }}    
+{{ .FullText | unshortenURLsinText}}    
 										</p>
 
 {{range .ExtendedEntities.Media}}
@@ -462,12 +508,12 @@ const emailTemplate = `
                     <td style="vertical-align:top" valign="top">
                         <p
                             style="margin-bottom:10px; margin:0; overflow:hidden; text-overflow:inherit; white-space:normal">
-                            <a href="{{.Expanded_url}}"
+                            <a href="{{.Expanded_url | unshortenURL}}"
                                 target="_blank"
                                 style="color:#000; text-decoration:None">
                                 {{.Expanded_url | getTwitterImage}}
 
-                                <strong>{{.Expanded_url}}</strong>
+                                <strong>{{.Expanded_url | unshortenURL}}</strong>
                             </a>
                         </p>
                     </td>
