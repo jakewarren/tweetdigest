@@ -15,7 +15,7 @@ require (
 	github.com/muesli/go-app-paths v0.0.0-20190807044811-d2c0b0de0ab1
 	github.com/rs/zerolog v1.17.2
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.5.0
+	github.com/spf13/viper v1.6.1
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 )
