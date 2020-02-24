@@ -2,12 +2,12 @@ version: 2
 jobs:
   lint:
     docker:
-      - image: golangci/golangci-lint:v1.21.0
+      - image: golangci/golangci-lint:v1.22.2
     steps:
       - checkout
       - run:
           name: "Run golangci-lint"
-          command: golangci-lint run --color always --enable-all --exclude-use-default -D godox -D gochecknoglobals -D gochecknoinits -D lll -D wsl
+          command: golangci-lint run --color always --enable-all --exclude-use-default -D godox -D gochecknoglobals -D gochecknoinits -D lll -D wsl -D funlen -D whitespace -D gomnd -D bodyclose
   critic:
     docker:
       - image: jakewarren/gocritic:latest
