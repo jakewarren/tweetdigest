@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/ChimeraCoder/anaconda"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/jakewarren/metascraper"
 	apppaths "github.com/muesli/go-app-paths"
 	"github.com/rs/zerolog"
@@ -220,6 +221,19 @@ func (a app) generateHTML(tweets []anaconda.Tweet) string {
 		},
 		// enrich URLs by using the twitter images from URLs if they provide the supported metadata
 		"getTwitterImage": func(url string) template.HTML {
+			var output string
+
+			log.Debug().Str("url", url).Msg("fetching image for URL")
+
+			if strings.HasPrefix(url, "https://twitter.com/") && strings.Contains(url, "/status/") {
+				tweetCardText, tweetURL := generateTwitterCard(url)
+				output += tweetCardText
+				if tweetURL != "" {
+					url = tweetURL
+					fmt.Println(url)
+				}
+			}
+
 			p, metaErr := metascraper.Scrape(url)
 			if metaErr != nil {
 				log.Error().Str("url", url).Err(metaErr).Msg("error getting metadata for an url")
@@ -227,12 +241,12 @@ func (a app) generateHTML(tweets []anaconda.Tweet) string {
 			}
 
 			for _, m := range p.MetaData() {
-				if m.Name == "twitter:image" || m.Name == "og:image" {
-					return template.HTML(fmt.Sprintf(`<img src="%s" style="max-width:100%%; padding-bottom:5px">`, m.Content))
+				if m.Name == "twitter:image" || m.Name == "og:image" || m.Name == "twitter:image:src" {
+					output += fmt.Sprintf(`<img src="%s" style="max-width:100%%; padding-bottom:5px">`, m.Content)
 				}
 			}
 
-			return ""
+			return template.HTML(output)
 		},
 		// unshorten a single URL
 		"unshortenURL": func(url string) template.HTML {
@@ -264,6 +278,63 @@ func (a app) generateHTML(tweets []anaconda.Tweet) string {
 	}
 
 	return buf.String()
+}
+
+func generateTwitterCard(url string) (string, string) {
+	var output, tweetURL string
+
+	url = strings.Replace(url, "twitter.com", "mobile.twitter.com", 1)
+
+	log.Debug().Str("url", url).Msg("generating twitter card")
+
+	doc, err := scrapeURL(url)
+	if err != nil {
+		log.Warn().Err(err).Msg("error getting data from Twitter for a tweet")
+		return "", ""
+	}
+
+	tweetStatus := func(url string) string {
+		tweetData := strings.Split(url, "/")
+		return tweetData[len(tweetData)-1]
+	}(url)
+
+	tweetText, _ := doc.Find(fmt.Sprintf(`div[data-id="%s"] div`, tweetStatus)).First().Html()
+
+	linkRE := regexp.MustCompile(`(?m)<a href=.*?data-expanded-url="(.*?)" .*</a>`)
+	hashtagRE := regexp.MustCompile(`(?m)<a href="/hashtag/.*?>(.*?)</a>`)
+
+	if linkRE.MatchString(tweetText) {
+		tweetURL = linkRE.FindAllStringSubmatch(tweetText, -1)[0][1]
+	}
+
+	output = strings.TrimSpace(doc.Find("div.fullname").Text())
+	output += " " + strings.TrimSpace(doc.Find("span.username").Text()) + "\n"
+
+	output += tweetText
+	output = linkRE.ReplaceAllString(output, "$1")
+	output = hashtagRE.ReplaceAllString(output, "$1")
+	output = strings.ReplaceAll(output, "\n", "<br>")
+	output += "<br>"
+
+	return output, tweetURL
+}
+
+func scrapeURL(url string) (*goquery.Document, error) {
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("User-Agent", "Mozilla/4.0 (Mozilla/4.0; MSIE 7.0; Windows NT 5.1; SV1; .NET CLR 3.0.04506.30)")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return goquery.NewDocumentFromReader(resp.Body)
 }
 
 func unshortenURL(url string) (string, error) {
