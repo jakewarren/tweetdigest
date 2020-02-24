@@ -29,10 +29,11 @@ import (
 type app struct {
 	Client *anaconda.TwitterApi
 	Config struct {
-		Threshold  time.Duration
-		ConfigFile string
-		TweetCount int
-		Verbose    bool
+		Threshold       time.Duration
+		ConfigFile      string
+		TweetCount      int
+		Verbose         bool
+		IncludeRetweets bool
 	}
 }
 
@@ -77,6 +78,7 @@ func main() {
 	pflag.StringVarP(&a.Config.ConfigFile, "config", "c", "", "filepath to the config file")
 	pflag.DurationVarP(&a.Config.Threshold, "duration", "d", 0, "how far back to include tweets in the digest (example: \"-24h\")")
 	pflag.StringSliceP("email-to", "t", nil, "email address(es) to send the report to")
+	pflag.BoolVar(&a.Config.IncludeRetweets, "include-retweets", true, "include retweets in the digest")
 	pflag.BoolVarP(&a.Config.Verbose, "verbose", "v", false, "enable verbose output")
 	pflag.Parse()
 	_ = viper.BindPFlags(pflag.CommandLine)
@@ -194,6 +196,11 @@ func (a app) getTweetsForUser(s string) []anaconda.Tweet {
 		cTime = cTime.Local() // convert to local timezone
 
 		if cTime.After(dateThreshold) {
+
+			if !a.Config.IncludeRetweets && tweet.RetweetedStatus != nil {
+				continue
+			}
+
 			tweets = append([]anaconda.Tweet{tweet}, tweets...)
 		}
 	}
