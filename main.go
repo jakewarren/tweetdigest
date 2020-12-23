@@ -236,11 +236,10 @@ func (a app) generateHTML(tweets []anaconda.Tweet) string {
 			log.Debug().Str("url", url).Msg("fetching image for URL")
 
 			if strings.HasPrefix(url, "https://twitter.com/") && strings.Contains(url, "/status/") {
-				tweetCardText, tweetURL := generateTwitterCard(url)
+				tweetCardText, tweetURL := a.generateTwitterCard(url)
 				output += tweetCardText
 				if tweetURL != "" {
 					url = tweetURL
-					fmt.Println(url)
 				}
 			}
 
@@ -290,41 +289,21 @@ func (a app) generateHTML(tweets []anaconda.Tweet) string {
 	return buf.String()
 }
 
-func generateTwitterCard(url string) (string, string) {
-	var output, tweetURL string
+// TODO: make this prettier
+func (a app) generateTwitterCard(tweetURL string) (string, string) {
+	var output string
 
-	url = strings.Replace(url, "twitter.com", "mobile.twitter.com", 1)
+	log.Debug().Str("url", tweetURL).Msg("generating twitter card")
 
-	log.Debug().Str("url", url).Msg("generating twitter card")
+	v := url.Values{}
+	v.Set("url", tweetURL)
 
-	doc, err := scrapeURL(url)
-	if err != nil {
-		log.Warn().Err(err).Msg("error getting data from Twitter for a tweet")
-		return "", ""
+	o, err := a.Client.GetOEmbed(v)
+	if err == nil {
+		output = o.Html
+	} else {
+		log.Error().Err(err).Str("url", tweetURL).Msg("error generating tweet card")
 	}
-
-	tweetStatus := func(url string) string {
-		tweetData := strings.Split(url, "/")
-		return tweetData[len(tweetData)-1]
-	}(url)
-
-	tweetText, _ := doc.Find(fmt.Sprintf(`div[data-id="%s"] div`, tweetStatus)).First().Html()
-
-	linkRE := regexp.MustCompile(`(?m)<a href=.*?data-expanded-url="(.*?)" .*</a>`)
-	hashtagRE := regexp.MustCompile(`(?m)<a href="/hashtag/.*?>(.*?)</a>`)
-
-	if linkRE.MatchString(tweetText) {
-		tweetURL = linkRE.FindAllStringSubmatch(tweetText, -1)[0][1]
-	}
-
-	output = strings.TrimSpace(doc.Find("div.fullname").Text())
-	output += " " + strings.TrimSpace(doc.Find("span.username").Text()) + "\n"
-
-	output += tweetText
-	output = linkRE.ReplaceAllString(output, "$1")
-	output = hashtagRE.ReplaceAllString(output, "$1")
-	output = strings.ReplaceAll(output, "\n", "<br>")
-	output += "<br>"
 
 	return output, tweetURL
 }
