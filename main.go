@@ -135,8 +135,11 @@ func main() {
 	anaconda.SetConsumerSecret(viper.GetString("consumer_secret"))
 	a.Client = anaconda.NewTwitterApi(viper.GetString("access_token"), viper.GetString("access_token_secret"))
 
-	username := pflag.Arg(0)
-	tweets := a.getTweetsForUser(username)
+	tweets := make([]anaconda.Tweet, 0)
+	for _, u := range pflag.Args() {
+		t := a.getTweetsForUser(u)
+		tweets = append(tweets, t...)
+	}
 
 	if len(tweets) == 0 {
 		return
@@ -145,7 +148,7 @@ func main() {
 	m := gomail.NewMessage()
 	m.SetAddressHeader("From", viper.GetString("email_from.address"), viper.GetString("email_from.name"))
 	m.SetHeader("To", viper.GetStringSlice("email-to")...)
-	m.SetHeader("Subject", fmt.Sprintf("@%s Tweet Digest for %s", username, time.Now().Format("1/2/06")))
+	m.SetHeader("Subject", fmt.Sprintf("@%s Tweet Digest for %s", strings.Join(pflag.Args(), "/@"), time.Now().Format("1/2/06")))
 	m.SetBody("text/html", a.generateHTML(tweets))
 	d := gomail.Dialer{
 		Host:     viper.GetString("email_server.server"),
