@@ -34,6 +34,7 @@ type app struct {
 		TweetCount      int
 		Verbose         bool
 		IncludeRetweets bool
+		IncludeReplies  bool
 	}
 }
 
@@ -79,6 +80,7 @@ func main() {
 	pflag.DurationVarP(&a.Config.Threshold, "duration", "d", 0, "how far back to include tweets in the digest (example: \"-24h\")")
 	pflag.StringSliceP("email-to", "t", nil, "email address(es) to send the report to")
 	pflag.BoolVar(&a.Config.IncludeRetweets, "include-retweets", true, "include retweets in the digest")
+	pflag.BoolVar(&a.Config.IncludeReplies, "include-replies", true, "include replies in the digest")
 	pflag.BoolVarP(&a.Config.Verbose, "verbose", "v", false, "enable verbose output")
 	pflag.Parse()
 	_ = viper.BindPFlags(pflag.CommandLine)
@@ -201,6 +203,10 @@ func (a app) getTweetsForUser(s string) []anaconda.Tweet {
 		if cTime.After(dateThreshold) {
 
 			if !a.Config.IncludeRetweets && tweet.RetweetedStatus != nil {
+				continue
+			}
+
+			if !a.Config.IncludeReplies && tweet.InReplyToStatusIdStr != "" {
 				continue
 			}
 
