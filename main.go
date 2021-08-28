@@ -303,6 +303,7 @@ func (a app) generateTwitterCard(tweetURL string) (string, string) {
 
 	v := url.Values{}
 	v.Set("url", tweetURL)
+	v.Set("dnt", "true")
 
 	o, err := a.Client.GetOEmbed(v)
 	if err == nil {
