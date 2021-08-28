@@ -206,7 +206,7 @@ func (a app) getTweetsForUser(s string) []anaconda.Tweet {
 				continue
 			}
 
-			if !a.Config.IncludeReplies && tweet.InReplyToStatusIdStr != "" {
+			if !a.Config.IncludeReplies && tweet.InReplyToStatusIdStr != "" && (tweet.InReplyToUserID != tweet.User.Id) {
 				continue
 			}
 
