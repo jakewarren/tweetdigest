@@ -31,9 +31,12 @@ Usage: tweetdigest -d [duration] [twitter username]
 
 Options:
   -c, --config string       filepath to the config file
-  -d, --duration duration   how far back to include tweets in the digest (example: "-24h")
+  -d, --duration duration   how far back to include tweets in the digest (example: "-24h") (default -24h0m0s)
   -t, --email-to strings    email address(es) to send the report to
+      --include-replies     include replies in the digest (default true)
+      --include-retweets    include retweets in the digest (default true)
       --tweet-count int     number of tweets to analyze (max 200) (default 50)
+  -v, --verbose             enable verbose output
   -V, --version             show version information
 ```
 
