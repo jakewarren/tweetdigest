@@ -1,6 +1,5 @@
 # tweetdigest
 [![GitHub release](http://img.shields.io/github/release/jakewarren/tweetdigest.svg?style=flat-square)](https://github.com/jakewarren/tweetdigest/releases)
-[![CircleCI](https://circleci.com/gh/jakewarren/tweetdigest.svg?style=shield)](https://circleci.com/gh/jakewarren/tweetdigest)
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/jakewarren/tweetdigest/blob/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jakewarren/tweetdigest)](https://goreportcard.com/report/github.com/jakewarren/tweetdigest)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=shields)](http://makeapullrequest.com)
