@@ -76,7 +76,7 @@ func main() {
 	showVersion := pflag.BoolP("version", "V", false, "show version information")
 	pflag.IntVar(&a.Config.TweetCount, "tweet-count", 50, "number of tweets to analyze (max 200)")
 	pflag.StringVarP(&a.Config.ConfigFile, "config", "c", "", "filepath to the config file")
-	pflag.DurationVarP(&a.Config.Threshold, "duration", "d", 0, "how far back to include tweets in the digest (example: \"-24h\")")
+	pflag.DurationVarP(&a.Config.Threshold, "duration", "d", -24*time.Hour, "how far back to include tweets in the digest (example: \"-24h\")")
 	pflag.StringSliceP("email-to", "t", nil, "email address(es) to send the report to")
 	pflag.BoolVar(&a.Config.IncludeRetweets, "include-retweets", true, "include retweets in the digest")
 	pflag.BoolVar(&a.Config.IncludeReplies, "include-replies", true, "include replies in the digest")
