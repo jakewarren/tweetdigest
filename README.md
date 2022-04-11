@@ -19,7 +19,7 @@ Download the latest release from [https://github.com/jakewarren/tweetdigest/rele
 ### Option 2: From source
 
 ```
-go get github.com/jakewarren/tweetdigest
+go install github.com/jakewarren/tweetdigest@latest
 ```
 
 ## Usage
