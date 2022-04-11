@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/ChimeraCoder/anaconda"
-	"github.com/PuerkitoBio/goquery"
 	"github.com/jakewarren/metascraper"
 	apppaths "github.com/muesli/go-app-paths"
 	"github.com/rs/zerolog"
@@ -127,8 +126,7 @@ func main() {
 		}
 	}
 
-	err := viper.ReadInConfig() // Find and read the config file
-	if err != nil {             // Handle errors reading the config file
+	if err := viper.ReadInConfig(); err != nil { // Handle errors reading the config file
 		log.Fatal().Err(err).Msg("Fatal error config file")
 	}
 
@@ -315,24 +313,6 @@ func (a app) generateTwitterCard(tweetURL string) (string, string) {
 	return output, tweetURL
 }
 
-func scrapeURL(url string) (*goquery.Document, error) {
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("User-Agent", "Mozilla/4.0 (Mozilla/4.0; MSIE 7.0; Windows NT 5.1; SV1; .NET CLR 3.0.04506.30)")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	return goquery.NewDocumentFromReader(resp.Body)
-}
-
 func unshortenURL(url string) (string, error) {
 	var output string
 
@@ -351,6 +331,7 @@ func unshortenURL(url string) (string, error) {
 	if unshortenErr == nil {
 		output = resp.Request.URL.String()
 	}
+	resp.Body.Close()
 	return output, unshortenErr
 }
 
