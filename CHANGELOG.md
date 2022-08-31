@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.1] - 2022-08-31
+### Fixed
+- fixed a nil reference error when attempting to unshorten an URL that cannot be reached
+
 ## [0.3.0] - 2022-04-11
 ### Added
 - added support for creating a digest with multiple users
@@ -36,8 +40,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [0.1.0] - 2019-11-07
 - Initial Release
 
-[unreleased]: https://github.com/jakewarren/tweetdigest/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/jakewarren/tweetdigest/compare/v0.3.0...v0.3.0
+[unreleased]: https://github.com/jakewarren/tweetdigest/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/jakewarren/tweetdigest/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/jakewarren/tweetdigest/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jakewarren/tweetdigest/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/jakewarren/tweetdigest/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/jakewarren/tweetdigest/compare/v0.1.0...v0.1.1
