@@ -330,8 +330,8 @@ func unshortenURL(url string) (string, error) {
 	resp, unshortenErr := client.Do(req)
 	if unshortenErr == nil {
 		output = resp.Request.URL.String()
+		resp.Body.Close()
 	}
-	resp.Body.Close()
 	return output, unshortenErr
 }
 
