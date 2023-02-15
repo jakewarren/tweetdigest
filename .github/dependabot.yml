@@ -9,3 +9,8 @@ updates:
   - dependency-name: github.com/rs/zerolog
     versions:
     - 1.20.0
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 10
